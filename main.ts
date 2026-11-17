@@ -4,26 +4,26 @@
 // while the round trip costs ~37 bps all-in at full size, so fast signals bleed
 // fees (the EMA(8/21) baseline loses $106 on this window). The window's real
 // structure is a few multi-hour swings: a -2% drawdown, then a +2.2% rally.
-// This bot trades only those: it buys a dip of 1.25% off the 240-bar (4h)
-// rolling high and sells the whole position at +1% over its cost. No stop-loss:
+// This bot trades only those: it buys a dip of 1.4% off the 360-bar (6h)
+// rolling high and sells the whole position at +1.1% over its cost. No stop-loss:
 // testing showed a stop exits winners early on this data (it cost money on the
 // mirrored window). No new entries in the last hour: a buy that late has no
 // time to reach its take-profit before the forced flatten.
 //
 // Rules, all integer-exact (bigint, no floats, no clock, no randomness):
-//   - entry: close * 10000 <= rollingHigh240 * 9875  (1.25% below the high)
-//   - exit:  position value * 10000 >= cost * 10100 (1% over cost, fees included)
+//   - entry: close * 10000 <= rollingHigh360 * 9860  (1.4% below the high)
+//   - exit:  position value * 10000 >= cost * 10110 (1.1% over cost, fees included)
 //   - size:  all cash on entry (capped by the weight room and the min notional)
 //   - slippage cap 100 bps per order, so a fill past a 1% gap is refused and
 //     retried on the next bar while the signal still holds.
 //
 // Backtest (exact local replay of the harness fill model, verified to the quote
 // unit against the official grade-local on buy-and-hold, momentum and EMA-cross):
-// dev window net PnL +$19.41 (3 round trips, fees $2.42, max drawdown -1.2%),
-// profitable on each 12h half (+$9.65 / +$1.83), 94-96% win rate over 200
-// one-hour-block bootstrap copies, and positive under +1%/+2% drift, time
-// reversal and a mirrored (bear) window. It loses only on a hard -2% bear day
-// (-$4.33), far inside the 25% drawdown guardrail.
+// dev window net PnL +$22.84 (3 round trips, fees $2.44, max drawdown -1.1%),
+// profitable on each 12h half (+$13.14 / +$0.16), 96-97% win rate over 200
+// one-hour-block bootstrap copies (median +$22-24), and positive on the
+// time-reversed window (+$6.15). Worst synthetic stress is the mirrored
+// (bear) window at -$2.54, far inside the 25% drawdown guardrail.
 //
 // Laid out like an entrant's repository: the grader runs `node /bot/main.ts`
 // with this directory mounted at /bot; vendor/makefun-bars.ts is a
@@ -31,12 +31,12 @@
 
 import { runBars, type BarsState, type BuyInput, type OrderInput } from './vendor/makefun-bars.ts';
 
-/** Bars of history for the rolling high (4 hours of 1-minute bars). */
-const LOOKBACK_BARS = 240;
-/** Buy when the close is this far below the rolling high, in bps (1.25%). */
-const DIP_BPS = 125;
-/** Sell when the position is worth this far over its cost, in bps (1%). */
-const TAKE_PROFIT_BPS = 100;
+/** Bars of history for the rolling high (6 hours of 1-minute bars). */
+const LOOKBACK_BARS = 360;
+/** Buy when the close is this far below the rolling high, in bps (1.4%). */
+const DIP_BPS = 140;
+/** Sell when the position is worth this far over its cost, in bps (1.1%). */
+const TAKE_PROFIT_BPS = 110;
 /** Per-order slippage cap, in bps (1% past the close it was decided on). */
 const MAX_SLIPPAGE_BPS = 100;
 /** No new entries after this batch: the last hour has no time to reach TP. */
